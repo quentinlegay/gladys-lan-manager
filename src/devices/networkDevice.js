@@ -89,8 +89,10 @@ export function buildDevice(gladys, config, entry) {
       has_feedback: false,
       keep_history: true,
     });
-    // Gladys will call onPoll at this interval (in seconds).
-    device.poll_frequency = config.poll_frequency;
+    // Gladys will call onPoll at this interval. Core only accepts poll_frequency
+    // in milliseconds, from a fixed enum (1/2/10/15/30/60 s) - config.poll_frequency
+    // is normalized to that same set, in seconds (see src/config.js).
+    device.poll_frequency = config.poll_frequency * 1000;
   }
 
   return device;

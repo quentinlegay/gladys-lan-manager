@@ -47,16 +47,22 @@
     },
     {
       "key": "poll_frequency",
-      "type": "number",
+      "type": "select",
       "label": { "en": "Presence check interval (s)", "fr": "Intervalle de détection (s)" },
       "description": {
-        "en": "How often each device's presence is refreshed, in seconds.",
-        "fr": "Fréquence de rafraîchissement de la présence de chaque appareil, en secondes."
+        "en": "How often each device's presence is refreshed. Gladys only allows these fixed intervals.",
+        "fr": "Fréquence de rafraîchissement de la présence de chaque appareil. Gladys n'autorise que ces intervalles fixes."
       },
       "required": false,
-      "default": 60,
-      "min": 15,
-      "max": 3600
+      "default": "60",
+      "options": [
+        { "value": "1", "label": { "en": "1 second", "fr": "1 seconde" } },
+        { "value": "2", "label": { "en": "2 seconds", "fr": "2 secondes" } },
+        { "value": "10", "label": { "en": "10 seconds", "fr": "10 secondes" } },
+        { "value": "15", "label": { "en": "15 seconds", "fr": "15 secondes" } },
+        { "value": "30", "label": { "en": "30 seconds", "fr": "30 secondes" } },
+        { "value": "60", "label": { "en": "60 seconds (default)", "fr": "60 secondes (défaut)" } }
+      ]
     }
   ],
   "actions": [

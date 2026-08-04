@@ -46,7 +46,8 @@ test('buildDevice adds a read-only Presence feature when presence_check is enabl
   assert.ok(presence, 'the presence feature must be present');
   assert.equal(presence.type, DEVICE_FEATURE_TYPES.SENSOR.BINARY);
   assert.equal(presence.read_only, true);
-  assert.equal(device.poll_frequency, config.poll_frequency);
+  // Gladys core requires poll_frequency in milliseconds, from a fixed enum.
+  assert.equal(device.poll_frequency, config.poll_frequency * 1000);
 });
 
 test('buildDiscoveredDevices maps one payload per stored entry', () => {

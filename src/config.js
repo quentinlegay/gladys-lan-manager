@@ -18,11 +18,19 @@ export const DEFAULT_CONFIG = {
   poll_frequency: 60, // seconds, how often presence is refreshed
 };
 
+// Gladys core only accepts a device poll_frequency in this exact set of
+// milliseconds (DEVICE_POLL_FREQUENCIES in server/utils/constants.js); any
+// other value is refused with a 400. The manifest's `poll_frequency` select
+// exposes these same values in seconds.
+const ALLOWED_POLL_FREQUENCY_SECONDS = [1, 2, 10, 15, 30, 60];
+
 /**
  * Merge the user config with the defaults.
  * @param {Record<string, unknown>} raw config returned by the SDK
  */
 export function normalizeConfig(raw = {}) {
+  const pollFrequency = Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency);
+
   return {
     ...DEFAULT_CONFIG,
     ...raw,
@@ -33,6 +41,8 @@ export function normalizeConfig(raw = {}) {
         : raw.presence_check !== false,
     // Force the types: config may arrive as strings from a form.
     presence_check_port: Number(raw.presence_check_port ?? DEFAULT_CONFIG.presence_check_port),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
+    poll_frequency: ALLOWED_POLL_FREQUENCY_SECONDS.includes(pollFrequency)
+      ? pollFrequency
+      : DEFAULT_CONFIG.poll_frequency,
   };
 }
