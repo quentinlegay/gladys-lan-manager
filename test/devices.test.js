@@ -29,6 +29,9 @@ test('buildDevice always exposes a Wake button feature', () => {
   assert.equal(wake.category, DEVICE_FEATURE_CATEGORIES.BUTTON);
   assert.equal(wake.type, DEVICE_FEATURE_TYPES.BUTTON.CLICK);
   assert.equal(wake.read_only, false);
+  // Gladys core rejects features with a null min/max (t_device_feature columns are NOT NULL).
+  assert.equal(wake.min, 0);
+  assert.equal(wake.max, 1);
   assert.equal(device.poll_frequency, undefined);
 });
 

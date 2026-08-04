@@ -68,6 +68,8 @@ export function buildDevice(gladys, config, entry) {
         external_id: ids.feature(FEATURE.WAKE),
         category: DEVICE_FEATURE_CATEGORIES.BUTTON,
         type: DEVICE_FEATURE_TYPES.BUTTON.CLICK,
+        min: 0,
+        max: 1,
         read_only: false, // actuator: pressing it sends the magic packet
         has_feedback: false, // momentary trigger, not a persisted power state
         keep_history: false,
