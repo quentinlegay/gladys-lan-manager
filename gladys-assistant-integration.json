@@ -1,0 +1,130 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "LAN Manager",
+  "description": {
+    "en": "Register LAN devices, send Wake-on-LAN packets and monitor if they are online.",
+    "fr": "Enregistrez des appareils du réseau, envoyez du Wake-on-LAN et surveillez leur présence."
+  },
+  "version": "1.0.0",
+  "docker_image": "ghcr.io/quentinlegay/gladys-lan-manager:1.0.0",
+  "gladys_version": ">=4.62.0",
+  "cover_image": "https://raw.githubusercontent.com/quentinlegay/gladys-lan-manager/main/cover.png",
+  "network_discovery": [{ "type": "udp-active-broadcast", "ports": [9] }],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": { "en": "How it works", "fr": "Fonctionnement" },
+      "description": {
+        "en": "LAN Manager cannot discover devices on its own: a plugged-in but powered-off PC or NAS does not answer any network scan. Add each device by hand with the actions below (name, MAC address, IP address), then create it from the Discovery tab. Wake-on-LAN must be enabled in the target device's BIOS/UEFI and network adapter settings, and the device must stay connected by cable in most cases (Wi-Fi Wake-on-LAN support varies a lot).",
+        "fr": "LAN Manager ne peut pas découvrir les appareils tout seul : un PC ou NAS éteint mais branché ne répond à aucun scan réseau. Ajoutez chaque appareil à la main via les actions ci-dessous (nom, adresse MAC, adresse IP), puis créez-le depuis l'onglet Découverte. Le Wake-on-LAN doit être activé dans le BIOS/UEFI et la carte réseau de l'appareil ciblé, qui doit le plus souvent rester branché en Ethernet (le support en Wi-Fi est très inégal)."
+      }
+    },
+    {
+      "key": "presence_check",
+      "type": "boolean",
+      "label": { "en": "Enable presence detection", "fr": "Activer la détection de présence" },
+      "description": {
+        "en": "Periodically probe each device's IP address to report it online or offline.",
+        "fr": "Sonde périodiquement l'adresse IP de chaque appareil pour signaler s'il est en ligne ou hors ligne."
+      },
+      "required": false,
+      "default": true
+    },
+    {
+      "key": "presence_check_port",
+      "type": "number",
+      "label": { "en": "Default presence-check port", "fr": "Port de détection par défaut" },
+      "description": {
+        "en": "TCP port probed to decide if a device is online, used when a device was added without its own port. A closed-but-answering port still counts as online.",
+        "fr": "Port TCP sondé pour savoir si un appareil est en ligne, utilisé si l'appareil a été ajouté sans port propre. Un port fermé mais qui répond compte tout de même comme en ligne."
+      },
+      "required": false,
+      "default": 80,
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "poll_frequency",
+      "type": "number",
+      "label": { "en": "Presence check interval (s)", "fr": "Intervalle de détection (s)" },
+      "description": {
+        "en": "How often each device's presence is refreshed, in seconds.",
+        "fr": "Fréquence de rafraîchissement de la présence de chaque appareil, en secondes."
+      },
+      "required": false,
+      "default": 60,
+      "min": 15,
+      "max": 3600
+    }
+  ],
+  "actions": [
+    {
+      "key": "add_device",
+      "label": { "en": "Add a device", "fr": "Ajouter un appareil" },
+      "timeout_seconds": 10,
+      "fields": [
+        {
+          "key": "name",
+          "type": "string",
+          "label": { "en": "Name", "fr": "Nom" },
+          "required": true
+        },
+        {
+          "key": "mac",
+          "type": "string",
+          "label": { "en": "MAC address", "fr": "Adresse MAC" },
+          "required": true,
+          "placeholder": { "en": "AA:BB:CC:DD:EE:FF", "fr": "AA:BB:CC:DD:EE:FF" }
+        },
+        {
+          "key": "ip",
+          "type": "string",
+          "label": { "en": "IP address", "fr": "Adresse IP" },
+          "required": true,
+          "placeholder": { "en": "192.168.1.42", "fr": "192.168.1.42" }
+        },
+        {
+          "key": "port",
+          "type": "number",
+          "label": {
+            "en": "Presence-check port (optional)",
+            "fr": "Port de détection (optionnel)"
+          },
+          "required": false,
+          "min": 1,
+          "max": 65535
+        }
+      ]
+    },
+    {
+      "key": "remove_device",
+      "label": { "en": "Remove a device", "fr": "Supprimer un appareil" },
+      "timeout_seconds": 10,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": { "en": "Device", "fr": "Appareil" },
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "wake_device",
+      "label": { "en": "Send Wake-on-LAN now", "fr": "Envoyer un Wake-on-LAN" },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": { "en": "Device", "fr": "Appareil" },
+          "required": true
+        }
+      ]
+    }
+  ]
+}
