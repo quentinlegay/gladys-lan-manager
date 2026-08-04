@@ -28,13 +28,14 @@ test('manifest declares exactly the actions handled in index.js', () => {
 
 test('config_schema defaults stay consistent with DEFAULT_CONFIG', () => {
   for (const field of manifest.config_schema) {
-    if (field.default !== undefined) {
-      assert.equal(
-        DEFAULT_CONFIG[field.key],
-        field.default,
-        `DEFAULT_CONFIG.${field.key} must match the manifest default`,
-      );
+    if (field.default === undefined) {
+      continue;
     }
+    // `select` option values (and so their default) are always strings
+    // (manifest.schema.json), even when DEFAULT_CONFIG stores the typed
+    // (e.g. numeric) value the code actually works with.
+    const expected = field.type === 'select' ? String(DEFAULT_CONFIG[field.key]) : DEFAULT_CONFIG[field.key];
+    assert.equal(expected, field.default, `DEFAULT_CONFIG.${field.key} must match the manifest default`);
   }
 });
 
@@ -55,20 +56,19 @@ test('section fields are purely presentational', () => {
   }
 });
 
-test('dynamic selects declare a source and no static options', () => {
-  const allFields = (manifest.actions ?? []).flatMap((action) => action.fields ?? []);
-  const dynamicSelects = allFields.filter((field) => field.source !== undefined);
-  assert.ok(
-    dynamicSelects.length > 0,
-    'remove_device and wake_device both target an existing device',
-  );
-  for (const field of dynamicSelects) {
-    assert.equal(field.source, 'devices', 'the only core-defined source in V1 is "devices"');
-    assert.equal(
-      field.options,
-      undefined,
-      `field "${field.key}": source and options are mutually exclusive`,
-    );
+test('remove_device and wake_device target a device by a plain string field, not a dynamic select', () => {
+  // Gladys core's externalIntegration.validateConfigValue.js validates a
+  // `select` field against `field.options` only: it never resolves a dynamic
+  // `field.source` (e.g. "devices") into the actual created-devices list, so
+  // a `select` + `source: "devices"` action field is unconditionally rejected
+  // ("must be one of" with zero valid values). Until that's fixed upstream,
+  // these two actions take a plain string (name or MAC) matched in index.js
+  // via findEntryByQuery instead.
+  for (const key of ['remove_device', 'wake_device']) {
+    const action = manifest.actions.find((a) => a.key === key);
+    const field = action.fields.find((f) => f.key === 'device');
+    assert.equal(field.type, 'string', `${key}.device must be a plain string field`);
+    assert.equal(field.source, undefined, `${key}.device must not use a dynamic source`);
   }
 });
 

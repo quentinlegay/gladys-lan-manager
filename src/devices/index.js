@@ -15,6 +15,7 @@ import {
   onPoll as networkDeviceOnPoll,
   onSetValue as networkDeviceOnSetValue,
 } from './networkDevice.js';
+import { normalizeMac } from '../store.js';
 
 /**
  * @description Build the discovery payload for every stored device.
@@ -40,6 +41,33 @@ export function buildDiscoveredDevices(gladys, config, entries) {
  */
 export function findEntryByExternalId(gladys, entries, externalId) {
   return entries.find((entry) => deviceIds(gladys, entry).device === externalId);
+}
+
+/**
+ * @description Find a stored entry by name or MAC address, case-insensitive.
+ * Used by the `wake_device` / `remove_device` manifest actions: their `device`
+ * field is a plain string, not a `select`/`source: "devices"` (Gladys core's
+ * validateConfigValue only checks a field's static `options`, never resolving
+ * a dynamic `source` - such a field is unconditionally rejected as
+ * "must be one of" with no valid values, see externalIntegration.
+ * validateConfigValue.js). Tries an exact MAC match first, then an exact
+ * (case-insensitive) name match.
+ * @param {object[]} entries - Stored devices, from `getManagedDevices`.
+ * @param {string} query - The user-provided name or MAC.
+ * @returns {object|undefined} The matching entry, if any.
+ * @example
+ * const entry = findEntryByQuery(entries, 'aa:bb:cc:dd:ee:ff');
+ */
+export function findEntryByQuery(entries, query) {
+  const trimmed = String(query ?? '').trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const normalizedMac = normalizeMac(trimmed);
+  return (
+    entries.find((entry) => entry.mac === normalizedMac) ||
+    entries.find((entry) => entry.name.toLowerCase() === trimmed.toLowerCase())
+  );
 }
 
 /**

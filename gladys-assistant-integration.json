@@ -111,10 +111,10 @@
       "fields": [
         {
           "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "type": "string",
+          "label": { "en": "Device name or MAC address", "fr": "Nom ou adresse MAC de l'appareil" },
+          "required": true,
+          "placeholder": { "en": "NAS or AA:BB:CC:DD:EE:FF", "fr": "NAS ou AA:BB:CC:DD:EE:FF" }
         }
       ]
     },
@@ -125,10 +125,10 @@
       "fields": [
         {
           "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "type": "string",
+          "label": { "en": "Device name or MAC address", "fr": "Nom ou adresse MAC de l'appareil" },
+          "required": true,
+          "placeholder": { "en": "NAS or AA:BB:CC:DD:EE:FF", "fr": "NAS ou AA:BB:CC:DD:EE:FF" }
         }
       ]
     }

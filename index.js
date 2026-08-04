@@ -25,9 +25,9 @@ import {
   buildDiscoveredDevices,
   dispatchPoll,
   dispatchSetValue,
-  findEntryByExternalId,
+  findEntryByQuery,
 } from './src/devices/index.js';
-import { triggerWake } from './src/devices/networkDevice.js';
+import { deviceIds, triggerWake } from './src/devices/networkDevice.js';
 
 const gladys = new GladysIntegration();
 
@@ -68,16 +68,18 @@ gladys.onAction('add_device', async (fields) => {
 });
 
 gladys.onAction('remove_device', async (fields) => {
-  const removed = await removeManagedDevice(gladys, fields.device);
+  const entry = findEntryByQuery(getManagedDevices(gladys), fields.device);
+  if (!entry) {
+    return { en: 'Device not found.', fr: 'Appareil introuvable.' };
+  }
+  await removeManagedDevice(gladys, deviceIds(gladys, entry).device);
   await republishDevices();
-  logger.info(`Action remove_device <- ${fields.device} (removed: ${removed})`);
-  return removed
-    ? { en: 'Device removed from LAN Manager.', fr: 'Appareil supprimé de LAN Manager.' }
-    : { en: 'Device not found.', fr: 'Appareil introuvable.' };
+  logger.info(`Action remove_device <- "${entry.name}" (${entry.mac})`);
+  return { en: 'Device removed from LAN Manager.', fr: 'Appareil supprimé de LAN Manager.' };
 });
 
 gladys.onAction('wake_device', async (fields) => {
-  const entry = findEntryByExternalId(gladys, getManagedDevices(gladys), fields.device);
+  const entry = findEntryByQuery(getManagedDevices(gladys), fields.device);
   if (!entry) {
     throw new Error('Device not found');
   }

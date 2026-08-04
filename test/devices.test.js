@@ -14,6 +14,7 @@ import {
   dispatchPoll,
   dispatchSetValue,
   findEntryByExternalId,
+  findEntryByQuery,
 } from '../src/devices/index.js';
 import { normalizeConfig } from '../src/config.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
@@ -65,6 +66,16 @@ test('findEntryByExternalId routes a device external_id back to its stored entry
   const ids = deviceIds(gladys, entry);
   assert.equal(findEntryByExternalId(gladys, [entry], ids.device), entry);
   assert.equal(findEntryByExternalId(gladys, [entry], 'does-not-exist'), undefined);
+});
+
+test('findEntryByQuery matches by MAC (any case/separator) or by name, case-insensitive', () => {
+  const entries = [entry, { ...entry, mac: 'aa:bb:cc:dd:ee:00', name: 'Other' }];
+
+  assert.equal(findEntryByQuery(entries, entry.mac), entry);
+  assert.equal(findEntryByQuery(entries, 'AA-BB-CC-DD-EE-FF'), entry, 'MAC match must be case/separator-insensitive');
+  assert.equal(findEntryByQuery(entries, 'nas'), entry, 'name match must be case-insensitive');
+  assert.equal(findEntryByQuery(entries, 'does-not-exist'), undefined);
+  assert.equal(findEntryByQuery(entries, ''), undefined);
 });
 
 test('onSetValue rejects a command on the read-only Presence feature', async () => {
