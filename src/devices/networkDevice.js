@@ -66,8 +66,8 @@ export function buildDevice(gladys, config, entry) {
       {
         name: 'Wake',
         external_id: ids.feature(FEATURE.WAKE),
-        category: DEVICE_FEATURE_CATEGORIES.BUTTON,
-        type: DEVICE_FEATURE_TYPES.BUTTON.CLICK,
+        category: DEVICE_FEATURE_CATEGORIES.SWITCH,
+        type: DEVICE_FEATURE_TYPES.SWITCH.BINARY,
         min: 0,
         max: 1,
         read_only: false, // actuator: pressing it sends the magic packet
