@@ -20,13 +20,12 @@ import {
   DEVICE_FEATURE_TYPES,
 } from '@gladysassistant/integration-sdk';
 import { sendWakeOnLan } from '../wol.js';
-import { checkPresence } from '../presence.js';
 
 export const DEVICE_TYPE = 'network-device';
 
 const logger = createLogger({ name: DEVICE_TYPE });
 
-export const FEATURE = { WAKE: 'wake', PRESENCE: 'presence' };
+export const FEATURE = { WAKE: 'wake' };
 
 /**
  * @description Build the device/feature external ids of one stored entry.
@@ -45,8 +44,8 @@ export function deviceIds(gladys, entry) {
 /**
  * @description Build the Gladys discovery payload for one stored entry.
  * @param {object} gladys - The connected GladysIntegration instance.
- * @param {object} config - Normalized integration config.
- * @param {object} entry - Stored device `{ name, mac, ip, port? }`.
+ * @param {object} config - Normalized integration config (unused, reserved for future settings).
+ * @param {object} entry - Stored device `{ name, mac, ip? }`.
  * @returns {object} The device payload for `publishDiscoveredDevices`.
  * @example
  * const device = buildDevice(gladys, config, entry);
@@ -54,14 +53,15 @@ export function deviceIds(gladys, entry) {
 export function buildDevice(gladys, config, entry) {
   const ids = deviceIds(gladys, entry);
 
-  const device = {
+  const params = [{ name: 'MAC_ADDRESS', value: entry.mac }];
+  if (entry.ip) {
+    params.push({ name: 'IP_ADDRESS', value: entry.ip });
+  }
+
+  return {
     name: entry.name,
     external_id: ids.device,
-    ip: entry.ip,
-    params: [
-      { name: 'MAC_ADDRESS', value: entry.mac },
-      { name: 'IP_ADDRESS', value: entry.ip },
-    ],
+    params,
     features: [
       {
         name: 'Wake',
@@ -76,26 +76,6 @@ export function buildDevice(gladys, config, entry) {
       },
     ],
   };
-
-  if (config.presence_check) {
-    device.features.push({
-      name: 'Presence',
-      external_id: ids.feature(FEATURE.PRESENCE),
-      category: DEVICE_FEATURE_CATEGORIES.PRESENCE_SENSOR,
-      type: DEVICE_FEATURE_TYPES.SENSOR.BINARY,
-      min: 0,
-      max: 1,
-      read_only: true, // measurement: no action possible
-      has_feedback: false,
-      keep_history: true,
-    });
-    // Gladys will call onPoll at this interval. Core only accepts poll_frequency
-    // in milliseconds, from a fixed enum (1/2/10/15/30/60 s) - config.poll_frequency
-    // is normalized to that same set, in seconds (see src/config.js).
-    device.poll_frequency = config.poll_frequency * 1000;
-  }
-
-  return device;
 }
 
 /**
@@ -127,26 +107,7 @@ export async function triggerWake(gladys, entry) {
 export async function onSetValue(gladys, config, entry, feature) {
   const ids = deviceIds(gladys, entry);
   if (feature.external_id !== ids.feature(FEATURE.WAKE)) {
-    throw new Error(`Feature ${feature.external_id} is read-only`);
+    throw new Error(`Feature ${feature.external_id} is not writable`);
   }
   await triggerWake(gladys, entry);
-}
-
-/**
- * @description Refresh the presence state of one device.
- * @param {object} gladys - The connected GladysIntegration instance.
- * @param {object} config - Normalized integration config.
- * @param {object} entry - Stored device `{ name, mac, ip, port? }`.
- * @returns {Promise<void>} Resolves once the state was published.
- * @example
- * await onPoll(gladys, config, entry);
- */
-export async function onPoll(gladys, config, entry) {
-  if (!config.presence_check) {
-    return;
-  }
-  const ids = deviceIds(gladys, entry);
-  const online = await checkPresence(entry.ip, entry.port || config.presence_check_port);
-  logger.debug(`Presence of "${entry.name}" (${entry.ip}): ${online ? 'online' : 'offline'}`);
-  await gladys.publishState(ids.feature(FEATURE.PRESENCE), online ? 1 : 0);
 }

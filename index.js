@@ -23,7 +23,6 @@ import { normalizeConfig } from './src/config.js';
 import { addManagedDevice, getManagedDevices, removeManagedDevice } from './src/store.js';
 import {
   buildDiscoveredDevices,
-  dispatchPoll,
   dispatchSetValue,
   findEntryByQuery,
 } from './src/devices/index.js';
@@ -49,11 +48,6 @@ gladys.onScanRequest(async () => {
 gladys.onSetValue(async (device, feature, value) => {
   logger.info(`onSetValue <- ${feature.external_id} = ${value}`);
   await dispatchSetValue(gladys, config, getManagedDevices(gladys), device, feature, value);
-});
-
-// --- Polling: Gladys asks to refresh a device's presence -----------------------
-gladys.onPoll(async (device) => {
-  await dispatchPoll(gladys, config, getManagedDevices(gladys), device);
 });
 
 // --- Manifest actions: buttons in the Configuration screen -------------------

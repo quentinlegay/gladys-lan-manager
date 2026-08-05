@@ -12,7 +12,6 @@
 import {
   buildDevice,
   deviceIds,
-  onPoll as networkDeviceOnPoll,
   onSetValue as networkDeviceOnSetValue,
 } from './networkDevice.js';
 import { normalizeMac } from '../store.js';
@@ -88,25 +87,4 @@ export async function dispatchSetValue(gladys, config, entries, device, feature,
     throw new Error(`Unknown device: ${device.external_id}`);
   }
   await networkDeviceOnSetValue(gladys, config, entry, feature, value);
-}
-
-/**
- * @description Route a `gladys.onPoll` refresh to its owning entry. Unlike
- * `dispatchSetValue`, an unknown device is not an error: it can legitimately
- * happen right after a `remove_device` action, while Gladys still schedules
- * the last poll for the device it just stopped offering.
- * @param {object} gladys - The connected GladysIntegration instance.
- * @param {object} config - Normalized integration config.
- * @param {object[]} entries - Stored devices, from `getManagedDevices`.
- * @param {object} device - The device to refresh.
- * @returns {Promise<void>} Resolves once the state was published (or skipped).
- * @example
- * await dispatchPoll(gladys, config, entries, device);
- */
-export async function dispatchPoll(gladys, config, entries, device) {
-  const entry = findEntryByExternalId(gladys, entries, device.external_id);
-  if (!entry) {
-    return;
-  }
-  await networkDeviceOnPoll(gladys, config, entry);
 }

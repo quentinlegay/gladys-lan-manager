@@ -105,32 +105,27 @@ export async function saveManagedDevices(gladys, devices) {
 /**
  * @description Add (or replace, if the MAC already exists) a managed device.
  * @param {object} gladys - The connected GladysIntegration instance.
- * @param {{ name: string, mac: string, ip: string, port?: number|string }} fields - Values from the `add_device` action form.
+ * @param {{ name: string, mac: string, ip?: string }} fields - Values from the `add_device` action form.
  * @returns {Promise<object>} The stored device.
  * @example
- * await addManagedDevice(gladys, { name: 'NAS', mac: 'aa:bb:cc:dd:ee:ff', ip: '192.168.1.10' });
+ * await addManagedDevice(gladys, { name: 'NAS', mac: 'aa:bb:cc:dd:ee:ff' });
  */
-export async function addManagedDevice(gladys, { name, mac, ip, port } = {}) {
+export async function addManagedDevice(gladys, { name, mac, ip } = {}) {
   if (!isValidMac(mac)) {
     throw new Error(`Invalid MAC address: "${mac}"`);
-  }
-  if (!isValidIp(ip)) {
-    throw new Error(`Invalid IPv4 address: "${ip}"`);
   }
 
   const normalizedMac = normalizeMac(mac);
   const device = {
     name: String(name ?? '').trim() || normalizedMac,
     mac: normalizedMac,
-    ip: String(ip).trim(),
   };
 
-  if (port !== undefined && port !== null && `${port}`.trim().length > 0) {
-    const portNumber = Number(port);
-    if (!Number.isInteger(portNumber) || portNumber < 1 || portNumber > 65535) {
-      throw new Error(`Invalid presence-check port: "${port}"`);
+  if (ip !== undefined && ip !== null && `${ip}`.trim().length > 0) {
+    if (!isValidIp(ip)) {
+      throw new Error(`Invalid IPv4 address: "${ip}"`);
     }
-    device.port = portNumber;
+    device.ip = String(ip).trim();
   }
 
   // Adding an already-known MAC replaces the previous entry (e.g. the user

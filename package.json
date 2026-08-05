@@ -1,5 +1,5 @@
 {
-  "name": "gladys-lan-manager",
+  "name": "gladys-wakeonlan",
   "version": "1.0.0",
   "private": true,
   "description": "External integration for Gladys Assistant: register LAN devices, send Wake-on-LAN packets and monitor whether they are online.",
