@@ -1,9 +1,76 @@
-# LAN Manager
+# Wake on LAN
 
 Voici la documentation utilisateur de l'intégration. Gladys héberge ce
 fichier et affiche un lien **Documentation** permanent dans l'écran de
-Configuration (dans la langue de l'utilisateur, avec repli sur l'anglais) —
-c'est au moment de la configuration que l'utilisateur en a le plus besoin.
+Configuration — c'est au moment de la configuration que vous en avez le plus
+besoin.
+
+## Ce que vous obtenez
+
+Wake on LAN vous permet d'enregistrer des appareils de votre réseau — un
+PC de bureau, un NAS, un serveur multimédia — et de leur envoyer un **paquet
+magique** pour les allumer à distance d'un simple clic dans Gladys.
+
+Comme ces appareils sont éteints par définition, aucun scan réseau ne peut
+les découvrir. Vous enregistrez chacun à la main (nom, adresse MAC) via
+l'action **Ajouter un appareil**, puis le créez depuis l'onglet
+**Découverte** comme n'importe quel autre appareil Gladys.
+
+## Prérequis
+
+- **Le Wake-on-LAN doit être activé sur l'appareil ciblé** : dans son
+  BIOS/UEFI (« Power On by PCI-E/PCIE », « Wake on LAN »…) et dans les
+  paramètres du pilote de sa carte réseau (Windows : Propriétés de la carte
+  → Gestion de l'alimentation / Avancé).
+- L'appareil doit de préférence rester **branché en Ethernet**. Le support
+  du Wake-on-LAN en Wi-Fi est très inégal selon les cartes et souvent
+  désactivé une fois l'ordinateur complètement éteint.
+- L'appareil et le serveur Gladys doivent être sur le **même réseau local**
+  (ou un réseau dont le routeur relaie le trafic broadcast) — le paquet
+  magique est un broadcast LAN, il n'est pas routé sur Internet.
+
+## Configuration
+
+1. Utilisez l'action **Ajouter un appareil** pour enregistrer un appareil
+   (nom, adresse MAC, et en option son adresse IP pour votre référence).
+2. Ouvrez l'onglet **Découverte** et créez l'appareil qui vient d'apparaître.
+3. L'appareil dispose maintenant d'un interrupteur **Wake** dans votre
+   dashboard Gladys. Activez-le pour envoyer le paquet magique et allumer la
+   machine.
+
+## Actions
+
+- **Ajouter un appareil** — enregistre un appareil (ou le met à jour si vous
+  ajoutez à nouveau la même adresse MAC).
+- **Supprimer un appareil** — arrête de proposer un appareil enregistré
+  (son historique dans Gladys est conservé, comme pour n'importe quelle autre
+  intégration).
+- **Envoyer un Wake-on-LAN** — un moyen rapide de tester le réveil sans
+  quitter l'écran de Configuration ; l'interrupteur **Wake** de l'appareil
+  fait exactement la même chose.
+
+## Comment le paquet magique est réellement envoyé
+
+Le conteneur de l'intégration s'exécute isolé sur son propre réseau : un
+paquet broadcast qu'il tenterait d'envoyer directement n'atteindrait jamais
+votre réseau local. Wake on LAN demande donc au cœur de Gladys lui-même
+(qui tourne sur votre réseau local) de diffuser le paquet magique en son
+nom — un broadcast *médié*, déclaré dans le manifeste de l'intégration. De
+ce fait, une seule demande de réveil est acceptée toutes les 10 secondes ;
+si vous cliquez à nouveau sur « Wake » immédiatement, patientez quelques
+secondes puis réessayez.
+
+## Dépannage
+
+- **Rien ne se passe quand je clique sur Wake** : vérifiez que le
+  Wake-on-LAN est activé dans le BIOS/UEFI et la carte réseau, et que
+  l'appareil est branché en Ethernet. Certains commutateurs/routeurs avec un
+  cloisonnement client strict ou de l'IGMP snooping peuvent aussi bloquer les
+  broadcasts LAN.
+- L'intégration journalise tout ce qu'elle fait : consultez les logs depuis
+  l'interface Gladys (ou `docker logs` sur l'hôte) avec `LOG_LEVEL=debug`
+  pour le détail complet.
+
 
 ## Ce que vous obtenez
 

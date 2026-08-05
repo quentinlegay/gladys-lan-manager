@@ -1,17 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import net from 'node:net';
 import { DEVICE_FEATURE_CATEGORIES, DEVICE_FEATURE_TYPES } from '@gladysassistant/integration-sdk';
 import {
   buildDevice,
   deviceIds,
   FEATURE,
-  onPoll,
   onSetValue,
 } from '../src/devices/networkDevice.js';
 import {
   buildDiscoveredDevices,
-  dispatchPoll,
   dispatchSetValue,
   findEntryByExternalId,
   findEntryByQuery,
@@ -19,11 +16,11 @@ import {
 import { normalizeConfig } from '../src/config.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
 
-const entry = { name: 'NAS', mac: 'aa:bb:cc:dd:ee:ff', ip: '127.0.0.1' };
+const entry = { name: 'NAS', mac: 'aa:bb:cc:dd:ee:ff' };
 
-test('buildDevice always exposes a Wake button feature', () => {
+test('buildDevice exposes a single writable Wake feature (SWITCH/BINARY)', () => {
   const gladys = createFakeGladys();
-  const device = buildDevice(gladys, normalizeConfig({ presence_check: false }), entry);
+  const device = buildDevice(gladys, normalizeConfig(), entry);
 
   assert.equal(device.features.length, 1);
   const wake = device.features[0];
@@ -33,22 +30,17 @@ test('buildDevice always exposes a Wake button feature', () => {
   // Gladys core rejects features with a null min/max (t_device_feature columns are NOT NULL).
   assert.equal(wake.min, 0);
   assert.equal(wake.max, 1);
+  // No presence polling: poll_frequency must be absent.
   assert.equal(device.poll_frequency, undefined);
 });
 
-test('buildDevice adds a read-only Presence feature when presence_check is enabled', () => {
+test('buildDevice includes the IP param only when provided', () => {
   const gladys = createFakeGladys();
-  const config = normalizeConfig({ presence_check: true });
-  const device = buildDevice(gladys, config, entry);
+  const withIp = buildDevice(gladys, normalizeConfig(), { ...entry, ip: '192.168.1.10' });
+  const withoutIp = buildDevice(gladys, normalizeConfig(), entry);
 
-  const presence = device.features.find(
-    (f) => f.category === DEVICE_FEATURE_CATEGORIES.PRESENCE_SENSOR,
-  );
-  assert.ok(presence, 'the presence feature must be present');
-  assert.equal(presence.type, DEVICE_FEATURE_TYPES.SENSOR.BINARY);
-  assert.equal(presence.read_only, true);
-  // Gladys core requires poll_frequency in milliseconds, from a fixed enum.
-  assert.equal(device.poll_frequency, config.poll_frequency * 1000);
+  assert.ok(withIp.params.find((p) => p.name === 'IP_ADDRESS'));
+  assert.equal(withoutIp.params.find((p) => p.name === 'IP_ADDRESS'), undefined);
 });
 
 test('buildDiscoveredDevices maps one payload per stored entry', () => {
@@ -78,15 +70,6 @@ test('findEntryByQuery matches by MAC (any case/separator) or by name, case-inse
   assert.equal(findEntryByQuery(entries, ''), undefined);
 });
 
-test('onSetValue rejects a command on the read-only Presence feature', async () => {
-  const gladys = createFakeGladys();
-  const ids = deviceIds(gladys, entry);
-  await assert.rejects(
-    onSetValue(gladys, normalizeConfig(), entry, { external_id: ids.feature(FEATURE.PRESENCE) }, 1),
-  );
-  assert.equal(gladys.scans.length, 0, 'no Wake-on-LAN packet must be sent');
-});
-
 test('onSetValue on the Wake feature sends a Wake-on-LAN packet', async () => {
   const gladys = createFakeGladys();
   const ids = deviceIds(gladys, entry);
@@ -95,40 +78,17 @@ test('onSetValue on the Wake feature sends a Wake-on-LAN packet', async () => {
   assert.equal(gladys.scans[0].type, 'udp-active-broadcast');
 });
 
+test('onSetValue rejects a command on an unknown feature', async () => {
+  const gladys = createFakeGladys();
+  await assert.rejects(
+    onSetValue(gladys, normalizeConfig(), entry, { external_id: 'unknown-feature' }, 1),
+  );
+  assert.equal(gladys.scans.length, 0, 'no Wake-on-LAN packet must be sent');
+});
+
 test('dispatchSetValue throws for an unknown device', async () => {
   const gladys = createFakeGladys();
   await assert.rejects(
     dispatchSetValue(gladys, normalizeConfig(), [], { external_id: 'unknown' }, {}, 1),
   );
-});
-
-test('onPoll publishes the presence state read from the device IP', async () => {
-  const server = net.createServer((socket) => socket.end());
-  const port = await new Promise((resolve) =>
-    server.listen(0, '127.0.0.1', () => resolve(server.address().port)),
-  );
-  try {
-    const gladys = createFakeGladys();
-    const localEntry = { ...entry, ip: '127.0.0.1', port };
-    await onPoll(gladys, normalizeConfig({ presence_check: true }), localEntry);
-
-    const ids = deviceIds(gladys, localEntry);
-    assert.deepEqual(gladys.published, [
-      { featureExternalId: ids.feature(FEATURE.PRESENCE), state: 1 },
-    ]);
-  } finally {
-    server.close();
-  }
-});
-
-test('onPoll does nothing when presence_check is disabled', async () => {
-  const gladys = createFakeGladys();
-  await onPoll(gladys, normalizeConfig({ presence_check: false }), entry);
-  assert.deepEqual(gladys.published, []);
-});
-
-test('dispatchPoll ignores an unknown device instead of throwing', async () => {
-  const gladys = createFakeGladys();
-  await dispatchPoll(gladys, normalizeConfig(), [], { external_id: 'unknown' });
-  assert.deepEqual(gladys.published, []);
 });
