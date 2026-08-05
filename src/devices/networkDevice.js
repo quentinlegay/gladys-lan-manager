@@ -71,7 +71,7 @@ export function buildDevice(gladys, config, entry) {
         min: 0,
         max: 1,
         read_only: false, // actuator: pressing it sends the magic packet
-        has_feedback: false, // momentary trigger, not a persisted power state
+        has_feedback: true,  // onSetValue calls publishState to confirm the new value
         keep_history: false,
       },
     ],
@@ -104,10 +104,16 @@ export async function triggerWake(gladys, entry) {
  * @example
  * await onSetValue(gladys, config, entry, feature, 1);
  */
-export async function onSetValue(gladys, config, entry, feature) {
+export async function onSetValue(gladys, config, entry, feature, value) {
   const ids = deviceIds(gladys, entry);
   if (feature.external_id !== ids.feature(FEATURE.WAKE)) {
     throw new Error(`Feature ${feature.external_id} is not writable`);
   }
-  await triggerWake(gladys, entry);
+  // Only send the magic packet when the user flips the switch ON.
+  // Flipping it back OFF has no hardware effect (there is no WoL-off),
+  // but we still confirm the state so the UI reflects what the user chose.
+  if (value === 1) {
+    await triggerWake(gladys, entry);
+  }
+  await gladys.publishState(feature.external_id, value);
 }

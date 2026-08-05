@@ -70,12 +70,23 @@ test('findEntryByQuery matches by MAC (any case/separator) or by name, case-inse
   assert.equal(findEntryByQuery(entries, ''), undefined);
 });
 
-test('onSetValue on the Wake feature sends a Wake-on-LAN packet', async () => {
+test('onSetValue(1) sends a WoL packet and publishes state 1', async () => {
   const gladys = createFakeGladys();
   const ids = deviceIds(gladys, entry);
-  await onSetValue(gladys, normalizeConfig(), entry, { external_id: ids.feature(FEATURE.WAKE) }, 1);
+  const featureExternalId = ids.feature(FEATURE.WAKE);
+  await onSetValue(gladys, normalizeConfig(), entry, { external_id: featureExternalId }, 1);
   assert.equal(gladys.scans.length, 1);
   assert.equal(gladys.scans[0].type, 'udp-active-broadcast');
+  assert.deepEqual(gladys.published, [{ featureExternalId, state: 1 }]);
+});
+
+test('onSetValue(0) publishes state 0 without sending a WoL packet', async () => {
+  const gladys = createFakeGladys();
+  const ids = deviceIds(gladys, entry);
+  const featureExternalId = ids.feature(FEATURE.WAKE);
+  await onSetValue(gladys, normalizeConfig(), entry, { external_id: featureExternalId }, 0);
+  assert.equal(gladys.scans.length, 0, 'no WoL packet for value=0');
+  assert.deepEqual(gladys.published, [{ featureExternalId, state: 0 }]);
 });
 
 test('onSetValue rejects a command on an unknown feature', async () => {
